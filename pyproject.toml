@@ -6,6 +6,7 @@ authors = [{ name = "杜世橋 Du Shiqiao", email = "lucidfrontier.45@gmail.com"
 requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.4.6",
+    "scikit-learn>=1.8.0",
 ]
 
 [project.scripts]
@@ -71,3 +72,9 @@ exclude = ["tests/**/*", "deps/**/*"]
 
 [tool.ruff.lint.per-file-ignores]
 "*/__init__.py" = ['F401']
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
