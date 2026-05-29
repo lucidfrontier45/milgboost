@@ -6,7 +6,7 @@
   "languages": {
     "Python": {
       "language_servers": [
-        "ty",
+        "pyreefly",
         "ruff",
         "!basedpyright"
       ],

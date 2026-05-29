@@ -4,6 +4,6 @@
     "ms-python.python",
     "littlefoxteam.vscode-python-test-adapter",
     "charliermarsh.ruff",
-    "astral-sh.ty",
+    "meta.pyrefly",
   ],
 }
