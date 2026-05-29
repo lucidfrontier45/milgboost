@@ -1,0 +1,78 @@
+from typing import Any, Self
+
+import lightgbm as lgb
+import numpy as np
+from sklearn.base import BaseEstimator, ClassifierMixin
+
+from milgboost.objective import BaseMILObjective
+
+from .base import BaseMILModel
+
+
+class _LightGBMMILObjective:
+    def __init__(self, base_objective: BaseMILObjective) -> None:
+        self._base_obj = base_objective
+        self._bag_ids: np.ndarray | None = None
+
+    def set_bag_ids(self, bag_ids: np.ndarray) -> None:
+        self._bag_ids = bag_ids
+
+    def __call__(
+        self, preds: np.ndarray, train_data: lgb.Dataset
+    ) -> tuple[np.ndarray, np.ndarray]:
+        y = train_data.get_label()
+        bag_ids = np.asarray(self._bag_ids, dtype=np.int64)
+        return self._base_obj(np.asarray(y, dtype=np.float64), bag_ids, preds)
+
+
+class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
+    def __init__(
+        self,
+        objective: BaseMILObjective,
+        lgb_params: dict | None = None,
+        num_boost_round: int = 100,
+        r: float = 1.0,
+    ) -> None:
+        self._objective = _LightGBMMILObjective(objective)
+        self._lgb_params = lgb_params
+        self._num_boost_round = num_boost_round
+        self.r = r
+
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        instance_labels = y[z.astype(np.int64)]
+        self._objective.set_bag_ids(np.asarray(z, dtype=np.int64))
+        dtrain = lgb.Dataset(x, label=instance_labels)
+
+        params = self._lgb_params or {"boosting_type": "gbdt", **kwargs}
+        params["objective"] = self._objective
+
+        self.model_ = lgb.train(
+            params=params,
+            train_set=dtrain,
+            num_boost_round=self._num_boost_round,
+        )
+
+        return self
+
+    def predict_proba(self, x: np.ndarray, z: np.ndarray) -> np.ndarray:
+        raw_preds = np.asarray(self.model_.predict(x), dtype=np.float64)
+        unique_z = np.unique(z)
+        bag_proba = np.zeros(len(unique_z))
+
+        for i, b in enumerate(unique_z):
+            mask = z == b
+            instance_preds = raw_preds[mask]
+            max_pred = np.max(instance_preds)
+            bag_logit = max_pred + (1.0 / self.r) * np.log(
+                np.sum(np.exp(self.r * (instance_preds - max_pred))) + 1e-15,
+            )
+            bag_proba[i] = 1.0 / (1.0 + np.exp(-bag_logit))
+
+        return bag_proba
