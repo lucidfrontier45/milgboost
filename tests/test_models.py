@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score
 
 from milgboost.datasets import make_mil_data
-from milgboost.model import LightGBMMILModel
+from milgboost.model import LightGBMMILModel, XGBoostMILModel
 from milgboost.objective import LSEBCE
 from milgboost.types import LabeledBag, labeled_bags_to_arrays
 
@@ -46,6 +46,23 @@ def test_lightgbm_mil(mil_data):
     x_test, y_test, z_test = labeled_bags_to_arrays(test_bags)
 
     model = LightGBMMILModel(objective=LSEBCE(r=1.0), num_boost_round=100)
+    model.fit(x_train, y_train, z_train)
+    y_proba = model.predict_proba(x_test, z_test)
+
+    assert len(y_proba) == len(y_test)
+    assert np.all((y_proba >= 0) & (y_proba <= 1))
+
+    ap = average_precision_score(y_test, y_proba)
+    assert ap >= 0.6
+
+
+def test_xgboost_mil(mil_data):
+    train_bags, test_bags, _ = mil_data
+
+    x_train, y_train, z_train = labeled_bags_to_arrays(train_bags)
+    x_test, y_test, z_test = labeled_bags_to_arrays(test_bags)
+
+    model = XGBoostMILModel(objective=LSEBCE(r=1.0), num_boost_round=100)
     model.fit(x_train, y_train, z_train)
     y_proba = model.predict_proba(x_test, z_test)
 
