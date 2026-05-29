@@ -4,10 +4,15 @@
     "ruff": {
       "command": ["uv", "run", "ruff", "server"],
       "extensions": [".py"],
+      "disabled": false,
     },
     "pyrefly": {
       "command": ["uv", "run", "pyrefly", "lsp"],
       "extensions": [".py"],
+      "disabled": false,
+    },
+    "ty": {
+      "disabled": true,
     },
     "pyright": {
       "disabled": true,
