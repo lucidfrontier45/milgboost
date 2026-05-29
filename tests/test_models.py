@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score
 
 from milgboost.datasets import make_mil_data
