@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format
+        name: format
+        language: system
+        entry: uv run poe format
+        types: [python]
