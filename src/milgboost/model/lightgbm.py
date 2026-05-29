@@ -10,11 +10,8 @@ from .base import BaseMILModel
 
 
 class _LightGBMMILObjective:
-    def __init__(self, base_objective: BaseMILObjective) -> None:
+    def __init__(self, base_objective: BaseMILObjective, bag_ids: np.ndarray) -> None:
         self._base_obj = base_objective
-        self._bag_ids: np.ndarray | None = None
-
-    def set_bag_ids(self, bag_ids: np.ndarray) -> None:
         self._bag_ids = bag_ids
 
     def __call__(
@@ -33,7 +30,7 @@ class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         num_boost_round: int = 100,
         r: float = 1.0,
     ) -> None:
-        self._objective = _LightGBMMILObjective(objective)
+        self._base_objective = objective
         self._lgb_params = lgb_params
         self._num_boost_round = num_boost_round
         self.r = r
@@ -47,11 +44,12 @@ class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         **kwargs: Any,
     ) -> Self:
         instance_labels = y[z.astype(np.int64)]
-        self._objective.set_bag_ids(np.asarray(z, dtype=np.int64))
         dtrain = lgb.Dataset(x, label=instance_labels)
 
         params = self._lgb_params or {"boosting_type": "gbdt", **kwargs}
-        params["objective"] = self._objective
+        params["objective"] = _LightGBMMILObjective(
+            self._base_objective, np.asarray(z, dtype=np.int64)
+        )
 
         self.model_ = lgb.train(
             params=params,

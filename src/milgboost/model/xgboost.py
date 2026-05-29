@@ -10,11 +10,8 @@ from .base import BaseMILModel
 
 
 class _XGBoostMILObjective:
-    def __init__(self, base_objective: BaseMILObjective) -> None:
+    def __init__(self, base_objective: BaseMILObjective, bag_ids: np.ndarray) -> None:
         self._base_obj = base_objective
-        self._bag_ids: np.ndarray | None = None
-
-    def set_bag_ids(self, bag_ids: np.ndarray) -> None:
         self._bag_ids = bag_ids
 
     def __call__(
@@ -33,7 +30,7 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         num_boost_round: int = 100,
         r: float = 1.0,
     ) -> None:
-        self._objective = _XGBoostMILObjective(objective)
+        self._base_objective = objective
         self._xgb_params = xgb_params
         self._num_boost_round = num_boost_round
         self.r = r
@@ -47,7 +44,9 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         **kwargs: Any,
     ) -> Self:
         instance_labels = y[z.astype(np.int64)]
-        self._objective.set_bag_ids(np.asarray(z, dtype=np.int64))
+        objective = _XGBoostMILObjective(
+            self._base_objective, np.asarray(z, dtype=np.int64)
+        )
         dtrain = xgb.DMatrix(x, label=instance_labels)
 
         params = self._xgb_params or {}
@@ -56,7 +55,7 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
             params=params,
             dtrain=dtrain,
             num_boost_round=self._num_boost_round,
-            obj=self._objective,
+            obj=objective,
         )
 
         return self
