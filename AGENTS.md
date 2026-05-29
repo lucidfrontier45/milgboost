@@ -19,7 +19,7 @@ Use these `uv` commands to manage the project, verify code quality, and run test
   - Python 3.13+
 - **File Structure:**
   - `src/` – Application source code
-  - `tests/` – Unit and functional tests
+  - `tests/` – Unit and functional tests, use functional pytest style
   - `pyproject.toml` – Project configuration and dependencies
   - `uv.lock` – Deterministic dependency lock file
 
