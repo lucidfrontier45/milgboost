@@ -28,12 +28,10 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         objective: BaseMILObjective,
         xgb_params: dict | None = None,
         num_boost_round: int = 100,
-        r: float = 1.0,
     ) -> None:
         self._base_objective = objective
         self._xgb_params = xgb_params
         self._num_boost_round = num_boost_round
-        self.r = r
 
     def fit(
         self,
@@ -63,16 +61,13 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
     def predict_proba(self, x: np.ndarray, z: np.ndarray) -> np.ndarray:
         dtest = xgb.DMatrix(x)
         raw_preds = np.asarray(self.model_.predict(dtest), dtype=np.float64)
-        unique_z = np.unique(z)
-        bag_proba = np.zeros(len(unique_z))
+        unique_z = sorted(np.unique(z))
+        bag_logit = []
 
-        for i, b in enumerate(unique_z):
+        for b in unique_z:
             mask = z == b
             instance_preds = raw_preds[mask]
             max_pred = np.max(instance_preds)
-            bag_logit = max_pred + (1.0 / self.r) * np.log(
-                np.sum(np.exp(self.r * (instance_preds - max_pred))) + 1e-15,
-            )
-            bag_proba[i] = 1.0 / (1.0 + np.exp(-bag_logit))
+            bag_logit.append(max_pred)
 
-        return bag_proba
+        return 1.0 / (1.0 + np.exp(-np.array(bag_logit)))
