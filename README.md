@@ -1,6 +1,4 @@
-# milgboost
-
-**Multiple Instance Learning** for **Gradient Boosting Models**.
+<img src="logo.png" alt="milgboost logo" width="500">
 
 MIL is a weakly supervised learning paradigm where labels are available for _bags_ (groups of instances) rather than individual instances. `milgboost` brings MIL to gradient boosting by wrapping LightGBM and XGBoost with custom differentiable objectives — currently the **LogSumExp Binary Cross-Entropy (LSE-BCE)** loss, a smooth approximation of the max-instance MIL loss.
 
