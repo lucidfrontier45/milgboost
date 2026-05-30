@@ -15,7 +15,7 @@ class LabeledBag(Bag):
 
 
 def arrays_to_bags(x: np.ndarray, z: np.ndarray) -> list[Bag]:
-    unique_z = np.unique(z)
+    unique_z = sorted(np.unique(z))
     return [Bag(features=x[z == i]) for i in unique_z]
 
 
@@ -31,7 +31,7 @@ def bags_to_arrays(bags: Sequence[Bag]) -> tuple[np.ndarray, np.ndarray]:
 def arrays_to_labeled_bags(
     x: np.ndarray, y: np.ndarray, z: np.ndarray
 ) -> list[LabeledBag]:
-    unique_z = np.unique(z)
+    unique_z = sorted(np.unique(z))
     return [LabeledBag(features=x[z == i], label=int(y[i])) for i in unique_z]
 
 
