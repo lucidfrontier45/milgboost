@@ -33,6 +33,24 @@ uv add milgboost[xgboost-cpu,lightgbm]
 | `milgboost.objective.base` | `BaseMILObjective` abstract interface for custom MIL objectives |
 | `milgboost.objective.lse`  | `LSEBCE` — LogSumExp binary cross-entropy objective             |
 
+## Output ordering
+
+All prediction methods (`predict`, `predict_proba`, `predict_bags`, `predict_proba_bags`) return results **sorted by bag_id in ascending order**. For example, if your bag IDs are `[3, 1, 2]`, the output will be ordered as bags `[1, 2, 3]`.
+
+**Recommendation**: Sort both `x` and `z` by `z` values before prediction to ensure output aligns with your expected ordering:
+
+```python
+# Sort x and z by z values before prediction
+sort_idx = np.argsort(z)
+x_sorted, z_sorted = x[sort_idx], z[sort_idx]
+
+# Predictions will follow the sorted order
+probs = model.predict_proba(x_sorted, z_sorted)
+# probs[i] corresponds to bag i (after sorting)
+```
+
+Using sequential bag IDs (0, 1, 2, ...) is the simplest approach to avoid confusion.
+
 ## Sample code
 
 ```python
