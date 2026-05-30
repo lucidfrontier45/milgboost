@@ -7,6 +7,38 @@ import numpy as np
 from ..types import Bag, LabeledBag, bags_to_arrays, labeled_bags_to_arrays
 
 
+def instance_max_pooling(raw_preds: np.ndarray, z: np.ndarray) -> np.ndarray:
+    """Aggregate instance predictions to bag-level via max-pooling.
+
+    Args:
+        raw_preds: Instance-level predictions (logits), shape (n_instances,).
+        z: Bag IDs, shape (n_instances,).
+
+    Returns:
+        Bag-level logits, shape (n_bags,). Sorted by bag_id (ascending).
+    """
+    unique_z = sorted(np.unique(z))
+    bag_logit = []
+    for b in unique_z:
+        mask = z == b
+        instance_preds = raw_preds[mask]
+        max_pred = np.max(instance_preds)
+        bag_logit.append(max_pred)
+    return np.array(bag_logit)
+
+
+def logistic_sigmoid(x: np.ndarray) -> np.ndarray:
+    """Apply logistic sigmoid function element-wise.
+
+    Args:
+        x: Input array (logits).
+
+    Returns:
+        Probabilities in range (0, 1).
+    """
+    return 1.0 / (1.0 + np.exp(-x))
+
+
 class BaseMILModel(ABC):
     @abstractmethod
     def fit(

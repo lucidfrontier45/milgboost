@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 
 from milgboost.objective import BaseMILObjective
 
-from .base import BaseMILModel
+from .base import BaseMILModel, instance_max_pooling, logistic_sigmoid
 
 
 class _LightGBMMILObjective:
@@ -59,13 +59,5 @@ class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
 
     def predict_proba(self, x: np.ndarray, z: np.ndarray) -> np.ndarray:
         raw_preds = np.asarray(self.model_.predict(x), dtype=np.float64)
-        unique_z = sorted(np.unique(z))
-        bag_logit = []
-
-        for b in unique_z:
-            mask = z == b
-            instance_preds = raw_preds[mask]
-            max_pred = np.max(instance_preds)
-            bag_logit.append(max_pred)
-
-        return 1.0 / (1.0 + np.exp(-np.array(bag_logit)))
+        bag_logits = instance_max_pooling(raw_preds, z)
+        return logistic_sigmoid(bag_logits)
