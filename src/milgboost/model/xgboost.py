@@ -47,7 +47,8 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         )
         dtrain = xgb.DMatrix(x, label=instance_labels)
 
-        params = self._xgb_params or {}
+        params: dict[str, Any] = dict(self._xgb_params) if self._xgb_params else {}
+        params.update(kwargs)
 
         self.model_ = xgb.train(
             params=params,
@@ -59,6 +60,20 @@ class XGBoostMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         return self
 
     def predict_proba(self, x: np.ndarray, z: np.ndarray) -> np.ndarray:
+        """Predict bag-level probabilities.
+
+        Aggregation uses hard max-pooling (see
+        :func:`~milgboost.model.base.instance_max_pooling`), which differs from
+        the soft approximation (LSE) used during training.
+
+        Args:
+            x: Instance features, shape (n_instances, n_features).
+            z: Bag IDs, shape (n_instances,). Each unique ID corresponds to one bag.
+
+        Returns:
+            Bag-level probabilities, shape (n_bags,). Output is sorted by bag_id
+            (ascending order of unique z values).
+        """
         dtest = xgb.DMatrix(x)
         raw_preds = np.asarray(self.model_.predict(dtest), dtype=np.float64)
         bag_logits = instance_max_pooling(raw_preds, z)

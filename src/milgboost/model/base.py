@@ -10,6 +10,10 @@ from ..types import Bag, LabeledBag, bags_to_arrays, labeled_bags_to_arrays
 def instance_max_pooling(raw_preds: np.ndarray, z: np.ndarray) -> np.ndarray:
     """Aggregate instance predictions to bag-level via max-pooling.
 
+    At prediction time MIL uses hard max-pooling (this function). During training,
+    the LSE objective (:class:`~milgboost.objective.lse.LSE`) uses a soft
+    approximation (log-sum-exp) which converges to hard max as ``r -> infinity``.
+
     Args:
         raw_preds: Instance-level predictions (logits), shape (n_instances,).
         z: Bag IDs, shape (n_instances,).
@@ -45,9 +49,9 @@ class BaseMILModel(ABC):
         self, x: np.ndarray, y: np.ndarray, z: np.ndarray, *args: Any, **kwargs: Any
     ) -> Self: ...
 
-    def fit_bags(self, bags: Sequence[LabeledBag], *args, **kwargs):
+    def fit_bags(self, bags: Sequence[LabeledBag], *args: Any, **kwargs: Any) -> Self:
         x, y, z = labeled_bags_to_arrays(bags)
-        self.fit(x, y, z, *args, **kwargs)
+        return self.fit(x, y, z, *args, **kwargs)
 
     @abstractmethod
     def predict_proba(self, x: np.ndarray, z: np.ndarray) -> np.ndarray:

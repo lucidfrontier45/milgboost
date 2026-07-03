@@ -44,7 +44,10 @@ class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         instance_labels = y[z.astype(np.int64)]
         dtrain = lgb.Dataset(x, label=instance_labels)
 
-        params = self._lgb_params or {"boosting_type": "gbdt", **kwargs}
+        params: dict[str, Any] = (
+            dict(self._lgb_params) if self._lgb_params else {"boosting_type": "gbdt"}
+        )
+        params.update(kwargs)
         params["objective"] = _LightGBMMILObjective(
             self._base_objective, np.asarray(z, dtype=np.int64)
         )
@@ -58,6 +61,20 @@ class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         return self
 
     def predict_proba(self, x: np.ndarray, z: np.ndarray) -> np.ndarray:
+        """Predict bag-level probabilities.
+
+        Aggregation uses hard max-pooling (see
+        :func:`~milgboost.model.base.instance_max_pooling`), which differs from
+        the soft approximation (LSE) used during training.
+
+        Args:
+            x: Instance features, shape (n_instances, n_features).
+            z: Bag IDs, shape (n_instances,). Each unique ID corresponds to one bag.
+
+        Returns:
+            Bag-level probabilities, shape (n_bags,). Output is sorted by bag_id
+            (ascending order of unique z values).
+        """
         raw_preds = np.asarray(self.model_.predict(x), dtype=np.float64)
         bag_logits = instance_max_pooling(raw_preds, z)
         return logistic_sigmoid(bag_logits)

@@ -1,9 +1,6 @@
 import numpy as np
 import pytest
 
-import numpy as np
-import pytest
-
 from milgboost.objective.lse import LSEBCE
 
 

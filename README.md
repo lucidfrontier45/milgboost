@@ -56,23 +56,23 @@ import numpy as np
 from milgboost.datasets import make_mil_data
 from milgboost.objective import LSEBCE
 from milgboost.model import LightGBMMILModel
+from milgboost.types import labeled_bags_to_arrays
 
 # Generate synthetic MIL data: 200 bags, 10 features
-x, y, z = make_mil_data(
+bags = make_mil_data(
     n_bags=200,
     n_features=10,
-    n_informative=5,
+    informative_ratio=0.5,
     key_instance_ratio=0.3,
     random_state=42,
 )
 
 # Split into train/test bags
-n_train = 150
-train_idx = z < n_train
-test_idx = z >= n_train
+train_bags = bags[:150]
+test_bags = bags[150:]
 
-x_train, y_train, z_train = x[train_idx], y[train_idx], z[train_idx]
-x_test, y_test, z_test = x[test_idx], y[test_idx], z[test_idx]
+x_train, y_train, z_train = labeled_bags_to_arrays(train_bags)
+x_test, y_test, z_test = labeled_bags_to_arrays(test_bags)
 
 # Train LSE-BCE LightGBM MIL model
 model = LightGBMMILModel(
@@ -82,10 +82,10 @@ model = LightGBMMILModel(
 )
 model.fit(x_train, y_train, z_train)
 
-# Predict
+# Predict — y_test and preds are both bag-length
 probs = model.predict_proba(x_test, z_test)
 preds = model.predict(x_test, z_test)
-print(f"Accuracy: {(preds == y_test[: len(preds)]).mean():.3f}")
+print(f"Accuracy: {(preds == y_test).mean():.3f}")
 ```
 
 ## Development
