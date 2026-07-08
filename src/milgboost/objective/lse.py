@@ -1,6 +1,7 @@
 import numpy as np
 
 from milgboost.objective.base import BaseMILObjective
+from milgboost.types import validate_dense_bag_ids
 
 
 def _stable_sigmoid(x: np.ndarray) -> np.ndarray:
@@ -35,7 +36,7 @@ class LSEBCE(BaseMILObjective):
         preds: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
         r = self.r
-        num_bags = int(np.max(bag_ids)) + 1
+        num_bags = validate_dense_bag_ids(bag_ids)
 
         r_preds = r * preds
         bag_max = np.zeros(num_bags, dtype=preds.dtype)

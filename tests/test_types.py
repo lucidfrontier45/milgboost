@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from milgboost.types import (
     Bag,
@@ -156,3 +157,19 @@ def test_labeled_bags_to_arrays_multiple_bags_varying_sizes() -> None:
     assert np.array_equal(x, expected_x)
     assert np.array_equal(y, expected_y)
     assert np.array_equal(z, expected_z)
+
+
+def test_arrays_to_labeled_bags_non_dense_z_raises() -> None:
+    x = np.array([[1.0], [2.0], [3.0]])
+    y = np.array([0, 1])
+    z = np.array([0, 2, 2])  # gap: bag id 1 missing
+    with pytest.raises(ValueError, match="dense 0-based contiguous"):
+        arrays_to_labeled_bags(x, y, z)
+
+
+def test_arrays_to_labeled_bags_y_length_mismatch_raises() -> None:
+    x = np.array([[1.0], [2.0]])
+    y = np.array([0, 1, 2])  # 3 labels for 2 bags
+    z = np.array([0, 1])
+    with pytest.raises(ValueError, match="y length"):
+        arrays_to_labeled_bags(x, y, z)

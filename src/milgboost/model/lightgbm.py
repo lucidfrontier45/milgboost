@@ -2,10 +2,10 @@ from typing import Any, Self
 
 import lightgbm as lgb
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin
 
 from milgboost.objective import BaseMILObjective
 
+from ..types import validate_dense_bag_ids
 from .base import BaseMILModel, instance_max_pooling, logistic_sigmoid
 
 
@@ -22,7 +22,7 @@ class _LightGBMMILObjective:
         return self._base_obj(np.asarray(y, dtype=np.float64), bag_ids, preds)
 
 
-class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
+class LightGBMMILModel(BaseMILModel):
     def __init__(
         self,
         objective: BaseMILObjective,
@@ -41,6 +41,12 @@ class LightGBMMILModel(BaseMILModel, BaseEstimator, ClassifierMixin):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
+        n_bags = validate_dense_bag_ids(z)
+        if len(y) != n_bags:
+            raise ValueError(
+                f"y length {len(y)} != number of bags {n_bags} implied by z"
+            )
+
         instance_labels = y[z.astype(np.int64)]
         dtrain = lgb.Dataset(x, label=instance_labels)
 

@@ -14,6 +14,37 @@ class LabeledBag(Bag):
     label: int
 
 
+def validate_dense_bag_ids(z: np.ndarray) -> int:
+    """Validate that ``z`` is dense 0-based contiguous bag IDs.
+
+    MIL paths index bag-level arrays by the raw ``z`` value (``LSEBCE``,
+    ``arrays_to_labeled_bags``, model ``fit``). Gaps or a non-zero minimum
+    would yield wrong labels, ``-inf`` logits, or index errors.
+
+    Args:
+        z: Per-instance bag IDs.
+
+    Returns:
+        Number of distinct bags (``z.max() + 1``).
+
+    Raises:
+        ValueError: If ``z`` is empty, not 0-based, or has gaps.
+    """
+    arr = np.asarray(z)
+    if arr.size == 0:
+        raise ValueError("bag_ids z must be non-empty")
+    z_min = int(arr.min())
+    z_max = int(arr.max())
+    n_unique = int(np.unique(arr).size)
+    if z_min != 0 or n_unique != z_max + 1:
+        raise ValueError(
+            f"bag_ids z must be dense 0-based contiguous "
+            f"(got min={z_min}, max={z_max}, unique={n_unique}); "
+            f"remap via np.unique(z, return_inverse=True)"
+        )
+    return z_max + 1
+
+
 def arrays_to_bags(x: np.ndarray, z: np.ndarray) -> list[Bag]:
     unique_z = sorted(np.unique(z))
     return [Bag(features=x[z == i]) for i in unique_z]
@@ -31,6 +62,9 @@ def bags_to_arrays(bags: Sequence[Bag]) -> tuple[np.ndarray, np.ndarray]:
 def arrays_to_labeled_bags(
     x: np.ndarray, y: np.ndarray, z: np.ndarray
 ) -> list[LabeledBag]:
+    n_bags = validate_dense_bag_ids(z)
+    if len(y) != n_bags:
+        raise ValueError(f"y length {len(y)} != number of bags {n_bags} implied by z")
     unique_z = sorted(np.unique(z))
     return [LabeledBag(features=x[z == i], label=int(y[i])) for i in unique_z]
 

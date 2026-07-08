@@ -93,3 +93,12 @@ def test_lse_known_values() -> None:
 
     assert np.allclose(grad, expected_grad)
     assert hess.min() >= 1e-4
+
+
+def test_lse_non_dense_bag_ids_raises() -> None:
+    y = np.array([1.0, 0.0, 1.0])
+    bag_ids = np.array([0, 2, 2])  # gap: bag id 1 missing
+    preds = np.array([0.5, -0.5, 1.0])
+    objective = LSEBCE(r=1.0)
+    with pytest.raises(ValueError, match="dense 0-based contiguous"):
+        objective(y, bag_ids, preds)

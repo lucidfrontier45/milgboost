@@ -70,3 +70,39 @@ def test_xgboost_mil(mil_data):
 
     ap = average_precision_score(y_test, y_proba)
     assert ap >= 0.6
+
+
+def test_lightgbm_fit_non_dense_z_raises() -> None:
+    x = np.array([[1.0], [2.0], [3.0]])
+    y = np.array([0, 1])
+    z = np.array([0, 2, 2])  # gap: bag id 1 missing
+    model = LightGBMMILModel(objective=LSEBCE(r=1.0), num_boost_round=1)
+    with pytest.raises(ValueError, match="dense 0-based contiguous"):
+        model.fit(x, y, z)
+
+
+def test_lightgbm_fit_y_length_mismatch_raises() -> None:
+    x = np.array([[1.0], [2.0]])
+    y = np.array([0, 1, 2])  # 3 labels for 2 bags
+    z = np.array([0, 1])
+    model = LightGBMMILModel(objective=LSEBCE(r=1.0), num_boost_round=1)
+    with pytest.raises(ValueError, match="y length"):
+        model.fit(x, y, z)
+
+
+def test_xgboost_fit_non_dense_z_raises() -> None:
+    x = np.array([[1.0], [2.0], [3.0]])
+    y = np.array([0, 1])
+    z = np.array([0, 2, 2])
+    model = XGBoostMILModel(objective=LSEBCE(r=1.0), num_boost_round=1)
+    with pytest.raises(ValueError, match="dense 0-based contiguous"):
+        model.fit(x, y, z)
+
+
+def test_xgboost_fit_y_length_mismatch_raises() -> None:
+    x = np.array([[1.0], [2.0]])
+    y = np.array([0, 1, 2])
+    z = np.array([0, 1])
+    model = XGBoostMILModel(objective=LSEBCE(r=1.0), num_boost_round=1)
+    with pytest.raises(ValueError, match="y length"):
+        model.fit(x, y, z)
